@@ -1,2 +1,44 @@
-# Lifetime-Health-Calendar
-Life health calendar
+
+
+## Lifetime Health Calendar Generator
+
+The **Lifetime Health Calendar Generator** creates a personalized medical checkup calendar starting from today and extending up to 90 years of age.
+
+You enter your birth date, select the health screenings and reminders that apply to you, and the tool generates a standards-compliant **`.ics` calendar file**. This file can be imported into most calendar systems, including mobile phones, desktop calendars, and email-based calendars.
+
+### What it does
+
+* Generates long-term health reminders based on age
+* Includes screenings, vaccinations, dental visits, and birthdays
+* Allows fine-grained control using checkboxes (enabled by default)
+* Skips dates in the past automatically
+* Spreads events over months to avoid notification overload
+* Produces an open **ICS (RFC 5545)** calendar for maximum compatibility
+
+### Important notes
+
+* Your **birth date must be correct** - incorrect input will shift all generated dates
+* The more screenings you enable, the larger the calendar becomes
+* Some years may contain multiple events on the same day if many checks are selected
+* Only select medical screenings that apply to your situation
+
+### Why ICS?
+
+The `.ics` format is an open, long-standing calendar standard supported by:
+
+* Android & iOS calendars
+* Google Calendar, Outlook, Apple Calendar
+* Desktop calendar apps and email systems
+
+This makes the calendar usable **offline, portable, and durable over decades**, without relying on any specific platform or service.
+
+### Privacy-friendly
+
+* Runs entirely in the browser
+* No accounts, no tracking, no data upload
+* Your health data never leaves your device
+
+---
+
+> Note: this is not medical advise. Please consult a doctor if you need screenings or checkups.
+> Science may changes over years and decades, always review it often.
