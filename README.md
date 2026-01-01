@@ -2,9 +2,11 @@
 
 ## Lifetime Health Calendar Generator
 
-The **Lifetime Health Calendar Generator** creates a personalized medical checkup calendar starting from today and extending up to 90 years of age.
+The **Lifetime Health Calendar Generator** creates a personalized medical checkup calendar starting from today and extending up to 90 years of age. You enter your birth date, select the health screenings and reminders that apply to you, and the tool generates a standards-compliant **`.ics` calendar file**. This file can be imported into most calendar systems, including mobile phones, desktop calendars, and email-based calendars.
 
-You enter your birth date, select the health screenings and reminders that apply to you, and the tool generates a standards-compliant **`.ics` calendar file**. This file can be imported into most calendar systems, including mobile phones, desktop calendars, and email-based calendars.
+### Requirements
+
+A server to upload the index and json files.
 
 ### What it does
 
