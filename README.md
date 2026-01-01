@@ -8,6 +8,10 @@ The **Lifetime Health Calendar Generator** creates a personalized medical checku
 
 A server to upload the index and json files.
 
+### Dates
+
+Always check the `events.json` for accurate dates and intervals. In your country, screening or vaccines might be done on a different age.
+
 ### What it does
 
 * Generates long-term health reminders based on age
