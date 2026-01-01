@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lifetime Health Calendar</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 30px auto; padding: 0 20px; background: #f0f4f8; color: #333; }
+h1 { text-align: center; color: #1a73e8; }
+fieldset { border: 1px solid #ccc; border-radius: 8px; padding: 15px 20px; margin-bottom: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+legend { font-weight: bold; color: #1a73e8; }
+label { display: block; margin: 6px 0; }
+input[type="date"] { padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+button { display: block; margin: 20px auto; padding: 12px 25px; font-size: 16px; font-weight: bold; color: #fff; background: #1a73e8; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+button:hover { background: #155ab6; }
+.note { text-align: center; font-size: 0.9em; color: #555; }
+</style>
+</head>
+<body>
+
+<h1>Lifetime Health Calendar Generator</h1>
+<p>
+Generate a lifetime medical checkup calendar, starting from today until 90 years old. Your age must be correct, otherwise it might give wrong dates. The more checks you add, the bigger the calendar becomes and perhaps list multiple events per day. Only check the medical screenings that apply to you. 
+The .ICS calendar can be imported into many different programs, such as phones, computers, email accounts and much more.
+</p>
+
+<label>Birth Date: <input type="date" id="birthDate"></label>
+
+<div id="checkboxContainer"></div>
+
+<button id="generateBtn">Generate Calendar</button>
+<p class="note">All events are spaced across the year to avoid collisions. Only yearly, semiannual, and multi-year events are included.</p>
+
+<script>
+let healthEvents = [];
+let uidCounter = 0;
+
+// Load JSON dynamically
+fetch('events.json')
+  .then(res => res.json())
+  .then(data => {
+    healthEvents = data;
+    generateCheckboxes();
+  })
+  .catch(err => console.error('Failed to load events.json:', err));
+
+// Generate checkboxes dynamically
+function generateCheckboxes() {
+  const container = document.getElementById('checkboxContainer');
+  container.innerHTML = '';
+  healthEvents.forEach(category => {
+    const fieldset = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    legend.textContent = category.category;
+    fieldset.appendChild(legend);
+    category.subEvents.forEach(ev => {
+      const label = document.createElement('label');
+      label.innerHTML = `<input type="checkbox" class="eventCheckbox" value="${ev.title}" checked> ${ev.title} (${ev.frequency}) (Starting at age: ${ev.age})`;
+      fieldset.appendChild(label);
+    });
+    container.appendChild(fieldset);
+  });
+}
+
+// ICS utilities
+function pad(n) { return n.toString().padStart(2,'0'); }
+
+function formatDateICS(date) {
+  return date.getUTCFullYear() +
+         pad(date.getUTCMonth()+1) +
+         pad(date.getUTCDate()) + 'T' +
+         pad(date.getUTCHours()) +
+         pad(date.getUTCMinutes()) +
+         pad(date.getUTCSeconds()) + 'Z';
+}
+
+function createEvent(title, date, description, reminderDays=1, hour=9, minute=0) {
+  uidCounter++;
+  const uid = `${title}-${date.getTime()}-${uidCounter}@healthcalendar`;
+
+  const eventDate = new Date(date);
+  eventDate.setHours(hour, minute, 0);
+
+  const dtstamp = formatDateICS(new Date());
+  const dtstart = formatDateICS(eventDate);
+  const trigger = reminderDays > 0 ? `-P${reminderDays}D` : 'PT0S';
+
+  return [
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${dtstamp}`,
+    `DTSTART:${dtstart}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${description}`,
+    'BEGIN:VALARM',
+    `TRIGGER:${trigger}`,
+    'ACTION:DISPLAY',
+    'DESCRIPTION:Reminder',
+    'END:VALARM',
+    'END:VEVENT'
+  ].join('\r\n');
+}
+
+// Generate events
+function generateEvents(birth, event, categoryIndex=0, subEventIndex=0, totalSubEvents=1, categoryName) {
+  const events = [];
+  let age = event.age;
+  const today = new Date();
+  const maxAge = event.maxAge || 90;
+
+  while(age <= maxAge) {
+    const eventDate = new Date(birth);
+    eventDate.setFullYear(birth.getFullYear() + Math.floor(age));
+
+    // Birthday keeps original month/day, others spread across the year
+    if(categoryName !== "Birthday") {
+      const monthIndex = Math.floor((subEventIndex / totalSubEvents) * 12);
+      eventDate.setMonth(monthIndex);
+    }
+
+    // Spread events within the day to avoid overlaps
+    const hour = 9 + (subEventIndex % 8); // 9–16h
+    const minute = (subEventIndex * 15) % 60;
+
+    if(eventDate >= today) {
+      events.push(createEvent(event.title, eventDate, event.description, event.reminderDays, hour, minute));
+    }
+
+    switch(event.frequency) {
+      case "once": return events;
+      case "yearly": age += 1; break;
+      case "semiannual": age += 0.5; break;
+      case "every-2-years": age += 2; break;
+      case "every-3-years": age += 3; break;
+      case "every-5-years": age += 5; break;
+      case "every-10-years": age += 10; break;
+      default: return events;
+    }
+  }
+
+  return events;
+}
+
+// Generate ICS
+function generateICS(birthDate, selectedEvents) {
+  const birth = new Date(birthDate);
+  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lifetime Health Calendar//EN'];
+
+  healthEvents.forEach((category, catIndex) => {
+    category.subEvents.forEach((event, subIndex) => {
+      if(selectedEvents.includes(event.title)) {
+        const eventList = generateEvents(
+          birth,
+          event,
+          catIndex,
+          subIndex,
+          category.subEvents.length,
+          category.category  // ← Added this parameter
+        );
+        lines.push(...eventList);
+      }
+    });
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function downloadICS(filename, content) {
+  const blob = new Blob([content], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Button click
+document.getElementById('generateBtn').addEventListener('click', () => {
+  const birthDate = document.getElementById('birthDate').value;
+  if(!birthDate) { alert('Please select a birth date'); return; }
+
+  const checkboxes = document.querySelectorAll('.eventCheckbox');
+  const selectedEvents = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+
+  const ics = generateICS(birthDate, selectedEvents);
+  downloadICS('lifetime_health_calendar.ics', ics);
+});
+
+</script>
+
+</body>
+</html>
