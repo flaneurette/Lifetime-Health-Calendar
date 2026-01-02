@@ -47,4 +47,4 @@ This makes the calendar usable **offline, portable, and durable over decades**, 
 ---
 
 > Note: this is not medical advise. Please consult a doctor if you need screenings or checkups.
-> Science may changes over years and decades, always review it often.
+> Science may change over years and decades, always review it often.
