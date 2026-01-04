@@ -5,6 +5,11 @@
 # This is just an example of how you could integrate it, not a functioning script.
 # Drawback: API's might change overtime: years/decades, you loose events and signals. Not very reliable, but still useful and fun.
 
+# CRON USAGE
+# Run bot.php every day at 6:00 AM: 
+# sudo crontab -e
+# 0 6 * * * /usr/bin/php /path/to/bot.php
+
 # ==========================================================
 # USAGE:
 # ==========================================================
