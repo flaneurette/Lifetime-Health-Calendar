@@ -35,9 +35,12 @@ Always check the `events.json` for accurate dates and intervals. In your country
 ### Important notes
 
 * Your **birth date must be correct** - incorrect input will shift all generated dates
+* To make the calendar smaller, select less events (like not selecting birthday, removes a max of 90 possible events)
 * The more screenings you enable, the larger the calendar becomes
 * Some years may contain multiple events on the same day if many checks are selected
 * Only select medical screenings that apply to your situation
+* When you generate the .ics file, make a backup of it to restore it in the future if required. (or simply generate a new .ics, so keep the software as backup)
+* Future apps may change, deprecate and so on. The .ics file will likely still be useful, since it's build upon RFC standards.
 
 ### Why ICS?
 
