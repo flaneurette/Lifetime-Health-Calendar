@@ -3,6 +3,7 @@
 # A bot template.
 # HINT: You can send an event to a messaging service as well by using a bot, that runs in a cron.
 # This is just an example of how you could integrate it, not a functioning script.
+# Drawback: API's might change overtime: years/decades, you loose events and signals. Not very reliable, but still useful and fun.
 
 # sendMessage('telegram', 'YOUR_CHAT_ID', 'Hello!');
 # sendMessage('whatsapp', 'YOUR_PHONE_NUMBER', 'Hello!');
