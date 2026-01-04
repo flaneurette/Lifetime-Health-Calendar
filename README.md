@@ -15,7 +15,7 @@ The **Lifetime Health Calendar Generator** creates a personalized medical checku
 > Always check the imported dates manually.
 > Then set it and forget it, mostly.
 
-# New!
+## New!
 
 There now is also a `reader.html` which reads a `.ics` file and create a simple html calendar. You can use this to check the `.ics` file, or use it as calendar. It reads the exported `.ics` file.
 Since it's sensitive data, you host it locally instead of on a server. That is up to you.
