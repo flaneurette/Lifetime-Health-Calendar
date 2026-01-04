@@ -68,7 +68,21 @@ This makes the calendar usable **offline, portable, and durable over decades**, 
 
 # Default events
 
-The file events.json contains common screenings, events and vaccination dates. You can edit these and chnage them, accordingly to the schedule of your location which might be different. You could also add or remove events. Below are the default events. It might not seem much, but they can quickly fill your calendar because they are programatically added year, semi-yearly etc, so check/uncheck them carefully to prevent many events happening on a single day.
+The file events.json contains common screenings, events and vaccination dates. You can edit these and change them, accordingly to the schedule of your location which might be different. You could also add or remove events. Below are the default events. It might not seem much, but they can quickly fill your calendar because they are programatically added year, semi-yearly etc, so check/uncheck them carefully to prevent many events happening on a single day.
+
+Possible event times you can use:
+
+```
+  once
+  yearly
+  semiannual
+  every-2-years
+  every-3-years
+  every-5-years
+  every-10-years
+```
+
+Events.json defaults:
 
 ```
 [
