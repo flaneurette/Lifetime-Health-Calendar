@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lifetime Health Calendar Viewer</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 1200px; margin: 30px auto; padding: 0 20px; background: #f0f4f8; color: #333; }
+h1 { text-align: center; color: #1a73e8; }
+#controls { margin-bottom: 15px; text-align: center; }
+#eventCount { margin-top: 10px; font-size: 14px; color: #666; }
+#debug { margin: 20px 0; padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 11px; white-space: pre-wrap; }
+input[type="number"] { width: 80px; padding: 5px; }
+button { padding: 5px 10px; margin-left: 5px; cursor: pointer; }
+
+#calendar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+.month-block {
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 5px;
+  width: 200px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.month-block h3 {
+  text-align: center;
+  margin: 5px 0;
+  font-size: 16px;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.day-cell {
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #eee;
+  font-size: 12px;
+  position: relative;
+  border-radius: 3px;
+  background: #fafafa;
+}
+
+.day-cell.has-event { 
+  background-color: #ffdede; 
+  cursor: pointer; 
+  font-weight: bold;
+}
+
+.day-cell .tooltip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #aaa;
+  padding: 8px;
+  z-index: 10;
+  font-size: 11px;
+  white-space: normal;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  max-width: 250px;
+  min-width: 200px;
+  margin-top: 5px;
+}
+
+.day-cell.has-event:hover .tooltip { display: block; }
+
+.day-number { font-weight: bold; }
+
+.event-item {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.event-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.event-summary {
+  font-weight: bold;
+  color: #1a73e8;
+}
+
+.event-description {
+  font-size: 10px;
+  color: #666;
+  margin-top: 2px;
+}
+</style>
+</head>
+<body>
+
+<h1>Lifetime Health Calendar Viewer</h1>
+
+<div id="controls">
+  Year: <input type="number" id="yearInput" value="2026" min="1900" max="2126">
+  <button id="prevYear">←</button>
+  <button id="nextYear">→</button>
+  <button id="toggleDebug">Show Debug Info</button>
+  <div id="eventCount"></div>
+</div>
+
+<div id="debug" style="display:none;"></div>
+
+<div id="calendar"></div>
+
+<script>
+let allEvents = [];
+let currentYear = 2026;
+
+// Step 1: Read ICS file
+async function loadICS(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Could not load ICS file");
+    const text = await response.text();
+    
+    // Step 2: Split on events
+    const eventBlocks = text.split('BEGIN:VEVENT');
+    console.log(`Found ${eventBlocks.length - 1} events`);
+    
+    // Step 3: Parse each event
+    allEvents = [];
+    for (let i = 1; i < eventBlocks.length; i++) {
+      const block = eventBlocks[i];
+      const endIndex = block.indexOf('END:VEVENT');
+      if (endIndex === -1) continue;
+      
+      const eventText = block.substring(0, endIndex);
+      
+      // Extract date (DTSTART)
+      const dateMatch = eventText.match(/DTSTART[^:]*:(\d{8})/);
+      if (!dateMatch) continue;
+      
+      const dateStr = dateMatch[1];
+      const year = parseInt(dateStr.substring(0, 4));
+      const month = parseInt(dateStr.substring(4, 6));
+      const day = parseInt(dateStr.substring(6, 8));
+      
+      // Extract summary
+      const summaryMatch = eventText.match(/SUMMARY:([^\r\n]+)/);
+      const summary = summaryMatch ? summaryMatch[1].trim() : 'No title';
+      
+      // Extract description
+      const descMatch = eventText.match(/DESCRIPTION:([^\r\n]+)/);
+      const description = descMatch ? descMatch[1].trim() : '';
+      
+      allEvents.push({
+        year: year,
+        month: month,
+        day: day,
+        summary: summary,
+        description: description
+      });
+    }
+    
+    console.log(`Parsed ${allEvents.length} events total`);
+    
+    // Show debug info
+    updateDebugInfo();
+    
+    // Render the calendar for current year
+    renderCalendar(currentYear);
+    
+  } catch (err) {
+    console.error("Error:", err);
+    alert("Failed to load calendar: " + err.message);
+  }
+}
+
+function updateDebugInfo() {
+  const debugDiv = document.getElementById('debug');
+  debugDiv.innerHTML = `<strong>Total events: ${allEvents.length}</strong>\n\n`;
+  
+  // Count by year
+  const yearCounts = {};
+  allEvents.forEach(ev => {
+    yearCounts[ev.year] = (yearCounts[ev.year] || 0) + 1;
+  });
+  
+  debugDiv.innerHTML += '<strong>Events by year:</strong>\n';
+  Object.keys(yearCounts).sort().forEach(year => {
+    debugDiv.innerHTML += `${year}: ${yearCounts[year]} events\n`;
+  });
+  
+  // Count by type
+  const typeCounts = {};
+  allEvents.forEach(ev => {
+    typeCounts[ev.summary] = (typeCounts[ev.summary] || 0) + 1;
+  });
+  
+  debugDiv.innerHTML += '\n<strong>Event types:</strong>\n';
+  Object.entries(typeCounts).forEach(([type, count]) => {
+    debugDiv.innerHTML += `${type}: ${count} times\n`;
+  });
+}
+
+// Step 4: For the selected year, create array of events by day
+function getEventsForYear(year) {
+  // Filter events for this year
+  const yearEvents = allEvents.filter(ev => ev.year === year);
+  
+  // Create lookup: "month-day" -> [events]
+  const eventsByDay = {};
+  
+  yearEvents.forEach(ev => {
+    const key = `${ev.month}-${ev.day}`;
+    if (!eventsByDay[key]) {
+      eventsByDay[key] = [];
+    }
+    eventsByDay[key].push(ev);
+  });
+  
+  return eventsByDay;
+}
+
+// Step 5: Generate months in HTML and check if day has events
+function renderCalendar(year) {
+  const container = document.getElementById('calendar');
+  container.innerHTML = '';
+  
+  // Get events for this year
+  const eventsByDay = getEventsForYear(year);
+  const totalYearEvents = Object.values(eventsByDay).flat().length;
+  
+  document.getElementById('eventCount').textContent = `Showing ${totalYearEvents} events in ${year}`;
+  console.log(`Rendering ${year} with ${totalYearEvents} events`);
+  
+  // Generate 12 months
+  for (let month = 1; month <= 12; month++) {
+    const monthBlock = document.createElement('div');
+    monthBlock.className = 'month-block';
+    
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    
+    // Count events in this month
+    let monthEventCount = 0;
+    for (let day = 1; day <= 31; day++) {
+      const key = `${month}-${day}`;
+      if (eventsByDay[key]) {
+        monthEventCount += eventsByDay[key].length;
+      }
+    }
+    
+    monthBlock.innerHTML = `<h3>${monthName} (${monthEventCount})</h3>`;
+    
+    const monthGrid = document.createElement('div');
+    monthGrid.className = 'month-grid';
+    
+    // Figure out first day of month and total days
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+      const emptyCell = document.createElement('div');
+      emptyCell.className = 'day-cell empty';
+      monthGrid.appendChild(emptyCell);
+    }
+    
+    // Day cells
+    for (let day = 1; day <= daysInMonth; day++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      
+      const dayNum = document.createElement('span');
+      dayNum.className = 'day-number';
+      dayNum.textContent = day;
+      cell.appendChild(dayNum);
+      
+      // Check if this day has events
+      const key = `${month}-${day}`;
+      const dayEvents = eventsByDay[key];
+      
+      if (dayEvents && dayEvents.length > 0) {
+        cell.classList.add('has-event');
+        
+        // Create tooltip
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        
+        tooltip.innerHTML = dayEvents.map(ev => `
+          <div class="event-item">
+            <div class="event-summary">${ev.summary}</div>
+            <div class="event-description">${ev.description}</div>
+          </div>
+        `).join('');
+        
+        cell.appendChild(tooltip);
+      }
+      
+      monthGrid.appendChild(cell);
+    }
+    
+    monthBlock.appendChild(monthGrid);
+    container.appendChild(monthBlock);
+  }
+}
+
+// Navigation
+document.getElementById('yearInput').addEventListener('change', e => {
+  currentYear = parseInt(e.target.value);
+  renderCalendar(currentYear);
+});
+
+document.getElementById('prevYear').addEventListener('click', () => {
+  currentYear--;
+  document.getElementById('yearInput').value = currentYear;
+  renderCalendar(currentYear);
+});
+
+document.getElementById('nextYear').addEventListener('click', () => {
+  currentYear++;
+  document.getElementById('yearInput').value = currentYear;
+  renderCalendar(currentYear);
+});
+
+document.getElementById('toggleDebug').addEventListener('click', (e) => {
+  const debugDiv = document.getElementById('debug');
+  if (debugDiv.style.display === 'none') {
+    debugDiv.style.display = 'block';
+    e.target.textContent = 'Hide Debug Info';
+  } else {
+    debugDiv.style.display = 'none';
+    e.target.textContent = 'Show Debug Info';
+  }
+});
+
+// Load the calendar
+loadICS('lifetime_health_calendar.ics');
+</script>
+</body>
+</html>
