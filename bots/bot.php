@@ -8,37 +8,34 @@
 # ==========================================================
 # USAGE:
 # ==========================================================
+
 $config = [
     'telegram_token' => 'YOUR_TELEGRAM_BOT_TOKEN',
+    'telegram_api_url' => 'https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage',
     'whatsapp_token' => 'YOUR_WHATSAPP_TOKEN',
     'whatsapp_phone_id' => 'YOUR_PHONE_ID',
+    'whatsapp_api_url' => 'https://graph.facebook.com/v17.0/YOUR_PHONE_ID/messages',
+    'slack_api_url' => 'YOUR_SLACK_WEBHOOK_URL',
     'twilio_sid' => 'YOUR_TWILIO_SID',
     'twilio_token' => 'YOUR_TWILIO_AUTH_TOKEN',
-    'twilio_from' => '+1234567890'
+    'twilio_from' => '+1234567890',
+    'twilio_api_url' => 'https://api.twilio.com/2010-04-01/Accounts/YOUR_TWILIO_SID/Messages.json',
+    'discord_api_url' => 'YOUR_DISCORD_WEBHOOK_URL'
 ];
 
 $messenger = new UniversalMessenger($config);
 
-// Telegram
+// Example usage
 $messenger->send('telegram', 'YOUR_CHAT_ID', 'Hello Telegram!');
-
-// WhatsApp
-$messenger->send('whatsapp', 'RECIPIENT_NUMBER', 'Hello WhatsApp!');
-
-// Slack
+$messenger->send('whatsapp', 'YOUR_PHONE_NUMBER', 'Hello WhatsApp!');
 $messenger->send('slack', 'YOUR_WEBHOOK_URL', 'Hello Slack!');
-
-// Twilio SMS
-$messenger->send('twilio_sms', '+123456789', 'Hello SMS!');
-
-// Discord
-$messenger->send('discord', 'YOUR_WEBHOOK_URL', 'Hello Discord!');
 
 
 # ==========================================================
 # BOT:
 # ==========================================================
 
+<?php
 
 class UniversalMessenger {
 
@@ -60,7 +57,6 @@ class UniversalMessenger {
                 return $this->sendTwilioSMS($to, $message);
             case 'discord':
                 return $this->sendDiscord($to, $message);
-            // add more platforms here
             default:
                 throw new Exception("Unsupported platform: $platform");
         }
@@ -68,18 +64,20 @@ class UniversalMessenger {
 
     private function sendTelegram($chat_id, $message) {
         $token = $this->config['telegram_token'] ?? '';
+        $url = $this->config['telegram_api_url'] ?? "https://api.telegram.org/bot$token/sendMessage";
         if (!$token) throw new Exception("Telegram token not set");
 
-        $url = "https://api.telegram.org/bot$token/sendMessage?chat_id=$chat_id&text=".urlencode($message);
-        return file_get_contents($url);
+        $full_url = $url . "?chat_id=$chat_id&text=" . urlencode($message);
+        return file_get_contents($full_url);
     }
 
     private function sendWhatsApp($phone, $message) {
         $token = $this->config['whatsapp_token'] ?? '';
         $phone_id = $this->config['whatsapp_phone_id'] ?? '';
+        $url = $this->config['whatsapp_api_url'] ?? "https://graph.facebook.com/v17.0/$phone_id/messages";
         if (!$token || !$phone_id) throw new Exception("WhatsApp config missing");
 
-        $ch = curl_init("https://graph.facebook.com/v17.0/$phone_id/messages");
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Authorization: Bearer $token",
             "Content-Type: application/json"
@@ -97,7 +95,8 @@ class UniversalMessenger {
     }
 
     private function sendSlack($webhook_url, $message) {
-        $ch = curl_init($webhook_url);
+        $url = $this->config['slack_api_url'] ?? $webhook_url;
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['text' => $message]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -111,9 +110,10 @@ class UniversalMessenger {
         $sid = $this->config['twilio_sid'] ?? '';
         $token = $this->config['twilio_token'] ?? '';
         $from = $this->config['twilio_from'] ?? '';
+        $url = $this->config['twilio_api_url'] ?? "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
+
         if (!$sid || !$token || !$from) throw new Exception("Twilio config missing");
 
-        $url = "https://api.twilio.com/2010-04-01/Accounts/$sid/Messages.json";
         $data = http_build_query([
             'To' => $to,
             'From' => $from,
@@ -131,7 +131,8 @@ class UniversalMessenger {
     }
 
     private function sendDiscord($webhook_url, $message) {
-        $ch = curl_init($webhook_url);
+        $url = $this->config['discord_api_url'] ?? $webhook_url;
+        $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['content' => $message]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -140,7 +141,4 @@ class UniversalMessenger {
         curl_close($ch);
         return $response;
     }
-
-    // You can add more methods here for Signal, Messenger, etc.
 }
-
