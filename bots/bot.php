@@ -40,8 +40,6 @@ $messenger->send('slack', 'YOUR_WEBHOOK_URL', 'Hello Slack!');
 # BOT:
 # ==========================================================
 
-<?php
-
 class UniversalMessenger {
 
     private $config = [];
