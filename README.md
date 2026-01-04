@@ -7,7 +7,7 @@ The **Lifetime Health Calendar Generator** creates a personalized medical checku
 ### Possible limitations.
 
 - Google calendar might not import any event beyond 2036, due to 32-bit Unix time issues.
-- The maximum filesize generated is around: 512Kb for 90 years, some software might find that calendar too big (rare, but possible)
+- The maximum filesize generated is around: 500-800Kb for 90 years, some software might find that calendar too big (rare, but possible)
 - Some software might not create events beyond a certain date, perhaps not setting dates up to 90 years into the future.
 - The less events you select, the more likely the .ics will not give certain issues.
   
